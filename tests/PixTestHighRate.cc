@@ -489,8 +489,9 @@ void PixTestHighRate::doXPixelAlive() {
   resetROC();
   fPg_setup.clear();
   vector<pair<string, uint8_t> > pgtmp = fPixSetup->getConfigParameters()->getTbPgSettings();
+  //fPg_setup.push_back(std::make_pair("resetroc", 30));
   for (unsigned i = 0; i < pgtmp.size(); ++i) {
-    if (string::npos != pgtmp[i].first.find("resetroc")) continue;
+    //if (string::npos != pgtmp[i].first.find("resetroc")) continue;
     if (string::npos != pgtmp[i].first.find("resettbm")) continue;
     fPg_setup.push_back(pgtmp[i]);
   }
@@ -498,11 +499,24 @@ void PixTestHighRate::doXPixelAlive() {
 
   fApi->setPatternGenerator(fPg_setup);
 
+  fApi->flushTestboard();
+  fApi->flushTestboard();
+  fApi->flushTestboard();
+  fApi->flushTestboard();
+
+
+  TStopwatch sw;
+  sw.Start(kTRUE); // reset
+  do {
+    sw.Start(kFALSE); // continue
+  } while (sw.RealTime() < 1);
+
   //  pair<vector<TH2D*>,vector<TH2D*> > tests = xEfficiencyMaps("highRate", fParNtrig, FLAG_CHECK_ORDER | FLAG_FORCE_UNMASKED);
   //   vector<TH2D*> test2 = tests.first;
   //   vector<TH2D*> test3 = tests.second;
   vector<TH2D*> test2 = efficiencyMaps("highRate", fParNtrig, FLAG_CHECK_ORDER | FLAG_FORCE_UNMASKED);
   vector<TH2D*> test3 = getXrayMaps();
+  LOG(logINFO) << "??????????" << test3.size();
   vector<int> deadPixel(test2.size(), 0);
   vector<int> probPixel(test2.size(), 0);
   vector<int> xHits(test3.size(),0);

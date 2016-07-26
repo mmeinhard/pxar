@@ -863,6 +863,8 @@ namespace pxar {
 
     std::string getReportingLevel();
 
+    void flushTestboard();
+
   private:
 
     /** Private HAL object for the API to access hardware routines

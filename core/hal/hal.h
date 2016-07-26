@@ -419,12 +419,12 @@ namespace pxar {
      */
     uint16_t GetADC(uint8_t rpc_par1);
 
+    CTestboard * _testboard;
   private:
 
     /** Private instance of the testboard RPC interface, routes all
      *  hardware access:
      */
-    CTestboard * _testboard;
 
     /** Initialization status of the HAL instance, marks the "ready for
      *  operations" status

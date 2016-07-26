@@ -2442,3 +2442,7 @@ std::string pxarCore::getReportingLevel()
   LOG(logQUIET) << "Reporting Level is " << Log::ReportingLevel();
   return Log::ToString(Log::ReportingLevel());
 }
+
+void pxarCore::flushTestboard() {
+  _hal->_testboard->Flush();
+}

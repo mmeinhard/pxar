@@ -154,7 +154,7 @@ void PixTestTrim::trimTest() {
   vector<uint8_t> rocIds = fApi->_dut->getEnabledRocIDs(); 
 
   fApi->setDAC("Vtrim", 0);
-  fApi->setDAC("ctrlreg", 0);
+  fApi->setDAC("ctrlreg", 8);
   fApi->setDAC("Vcal", fParVcal);
 
   setTrimBits(15);  
@@ -515,7 +515,7 @@ void PixTestTrim::trimBitTest() {
     fProblem = true;
     return;
   }
-  fApi->setDAC("CtrlReg", 0); 
+  fApi->setDAC("CtrlReg", 8); 
   fApi->setDAC("Vtrim", 0); 
   LOG(logDEBUG) << "trimBitTest determine threshold map without trims "; 
   vector<TH1*> thr0 = mapsWithString(scurveMaps("Vcal", "TrimBitsThr0", NTRIG, 0, 199, -1, -1, 7), "thr");
@@ -609,7 +609,10 @@ vector<TH1*> PixTestTrim::trimStep(string name, int correction, vector<TH1*> cal
     for (int ix = 0; ix < 52; ++ix) {
       for (int iy = 0; iy < 80; ++iy) {
 	trimBitsOld[i][ix][iy] = fTrimBits[i][ix][iy];
-	if (calOld[i]->GetBinContent(ix+1, iy+1) > fParVcal) {
+	if (calOld[i]->GetBinContent(ix+1, iy+1) > 250) {
+	  trim = fTrimBits[i][ix][iy] + correction; 
+	}
+	else if (calOld[i]->GetBinContent(ix+1, iy+1) > fParVcal) {
 	  trim = fTrimBits[i][ix][iy] - correction; 
 	} else {
 	  trim = fTrimBits[i][ix][iy] + correction; 
@@ -633,7 +636,7 @@ vector<TH1*> PixTestTrim::trimStep(string name, int correction, vector<TH1*> cal
   for (unsigned int i = 0; i < calOld.size(); ++i) {
     for (int ix = 0; ix < 52; ++ix) {
       for (int iy = 0; iy < 80; ++iy) {
-	if (TMath::Abs(calOld[i]->GetBinContent(ix+1, iy+1) - fParVcal) < TMath::Abs(calNew[i]->GetBinContent(ix+1, iy+1) - fParVcal)) {
+	if ((TMath::Abs(calOld[i]->GetBinContent(ix+1, iy+1) - fParVcal) < TMath::Abs(calNew[i]->GetBinContent(ix+1, iy+1) - fParVcal)) && !(calOld[i]->GetBinContent(ix+1, iy+1)>250 || calNew[i]->GetBinContent(ix+1, iy+1)>250)) {
 	  trim = trimBitsOld[i][ix][iy];
 	  calNew[i]->SetBinContent(ix+1, iy+1, calOld[i]->GetBinContent(ix+1, iy+1)); 
 	} else {
