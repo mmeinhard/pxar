@@ -28,7 +28,7 @@ ntrig               10
 
 
 // ----------------------------------------------------------------------
-PixTestXPixelAlive2::PixTestXPixelAlive2(PixSetup *a, std::string name) : PixTest(a, name), fParVcal(35), fParNtrig(1), fParReset(-1) {
+PixTestXPixelAlive2::PixTestXPixelAlive2(PixSetup *a, std::string name) : PixTest(a, name), fParVcal(35), fParNtrig(1), fParReset(-1),fParMask(-1) {
 	PixTest::init();
 	init(); 
 
@@ -55,6 +55,12 @@ bool PixTestXPixelAlive2::setParameter(string parName, string sval) {
 				PixUtil::replaceAll(sval, "checkbox(", ""); 
 				PixUtil::replaceAll(sval, ")", ""); 
 				fParReset = atoi(sval.c_str()); 
+				setToolTips();
+			}
+			if (!parName.compare("maskborder")) {
+				PixUtil::replaceAll(sval, "checkbox(", ""); 
+				PixUtil::replaceAll(sval, ")", ""); 
+				fParMask = atoi(sval.c_str()); 
 				setToolTips();
 			}
 			if (!parName.compare("ntrig")) {
@@ -143,14 +149,15 @@ void PixTestXPixelAlive2::doTest() {
  
 	fApi->_dut->maskAllPixels(false);
 	fApi->_dut->testAllPixels(false);
-
-	for (int i=0;i<52;i++) {
-		fApi->_dut->maskPixel(i,0,true);
-		fApi->_dut->maskPixel(i,79,true);
-	}
-	for (int i=0;i<80;i++) {
-		fApi->_dut->maskPixel(0,i,true);
-		fApi->_dut->maskPixel(51,i,true);
+	if (fParMask == 1) {
+		for (int i=0;i<52;i++) {
+			fApi->_dut->maskPixel(i,0,true);
+			fApi->_dut->maskPixel(i,79,true);
+		}
+		for (int i=0;i<80;i++) {
+			fApi->_dut->maskPixel(0,i,true);
+			fApi->_dut->maskPixel(51,i,true);
+		}
 	}
 	TH1D *h;
 	h = bookTH1D("PH distribution", "PH distribution", 256, 0, 256.0);

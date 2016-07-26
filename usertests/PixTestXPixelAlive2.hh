@@ -21,7 +21,7 @@ public:
   
 private:
 
-  int fParVcal, fParNtrig, fParReset;
+  int fParVcal, fParNtrig, fParReset, fParMask;
   int fParNSteps;
 
   bool          fPhCalOK;
