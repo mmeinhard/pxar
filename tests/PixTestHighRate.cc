@@ -516,7 +516,6 @@ void PixTestHighRate::doXPixelAlive() {
   //   vector<TH2D*> test3 = tests.second;
   vector<TH2D*> test2 = efficiencyMaps("highRate", fParNtrig, FLAG_CHECK_ORDER | FLAG_FORCE_UNMASKED);
   vector<TH2D*> test3 = getXrayMaps();
-  LOG(logINFO) << "??????????" << test3.size();
   vector<int> deadPixel(test2.size(), 0);
   vector<int> probPixel(test2.size(), 0);
   vector<int> xHits(test3.size(),0);

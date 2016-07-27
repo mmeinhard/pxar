@@ -174,14 +174,11 @@ void PixTestXPixelAlive2::doTest() {
 	TH2D *h_noisemap;
 	h_noisemap = bookTH2D("background hits", "background hits", 52,0,52,80,0,80);
 
-	vector<int> deadPixel(1, 0);
-  vector<int> probPixel(1, 0);
-  vector<int> xHits(1,0);
-  vector<int> fidHits(1,0);
-  vector<int> allHits(1,0);
-  vector<int> fidPixels(1,0);
 
-	fApi->daqSingleSignal("resetroc");
+
+  fApi->flushTestboard();
+
+	//fApi->daqSingleSignal("resetroc");
 	fApi->daqStart();
 
 	for (int co = 0; co<52; co++) {
@@ -254,6 +251,13 @@ void PixTestXPixelAlive2::doTest() {
 	//LOG(logINFO) << ss.str();
 	EventId++;
 	}
+
+	vector<int> deadPixel(1, 0);
+    vector<int> probPixel(1, 0);
+    vector<int> xHits(1,0);
+    vector<int> fidHits(1,0);
+    vector<int> allHits(1,0);
+    vector<int> fidPixels(1,0);
 	
 	for (int ix = 0; ix < h_alive->GetNbinsX(); ++ix) {
     for (int iy = 0; iy < h_alive->GetNbinsY(); ++iy) {
