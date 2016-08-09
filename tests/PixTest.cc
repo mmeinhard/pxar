@@ -1682,7 +1682,8 @@ void PixTest::scurveAna(string dac, string name, vector<shist256*> maps, vector<
     for (unsigned int i = iroc*4160; i < (iroc+1)*4160; ++i) {
       PixUtil::idx2rcr(i, roc, ic, ir);
       if (maps[i]->getSumOfWeights() < 1) {
-        if (dumpFile) OutputFile << empty << endl;
+        //if (dumpFile) OutputFile << empty << endl;
+        //LOG(logINFO) << "empty"; 
         continue;
       }
       // -- calculated "proper" errors
@@ -1716,7 +1717,7 @@ void PixTest::scurveAna(string dac, string name, vector<shist256*> maps, vector<
         int ibin = h1->FindBin(fThreshold);
         int bmin = ibin - 15;
         line = Form("%2d %3d", NSAMPLES, bmin);
-        for (int ix = bmin; ix < bmin + NSAMPLES; ++ix) {
+        for (int ix = 0; ix < 200; ++ix) {
           line += string(Form(" %3d", static_cast<int>(h1->GetBinContent(ix+1))));
         }
         OutputFile << line << endl;

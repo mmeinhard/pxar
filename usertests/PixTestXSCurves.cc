@@ -251,7 +251,7 @@ void PixTestXSCurves::doTest() {
 
   TF1 *scurveFit = new TF1("Fit","[0]*TMath::Erf([2] * (x-[1])) + [3]",0,.3);
   scurveFit->SetParameters(fParNtrig/2.,0.14,1/0.02,fParNtrig/2.);
-  volts->Fit(scurveFit,"Q", "", 0.0, 0.3);
+  h_countsvolts->Fit(scurveFit,"Q", "", 0.0, 0.3);
   //LOG(logINFO) << "Par0: " << scurveFit->GetParameter(0);
 
   float slope = VcalVoltageCalibrationLowRange[199]/200;

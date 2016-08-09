@@ -145,6 +145,8 @@ void PixTestXPixelAlive2::doTest() {
 		fPg_setup.push_back(a[i]);
 	}
 
+
+
 	fApi->setPatternGenerator(fPg_setup);
  
 	fApi->_dut->maskAllPixels(false);
@@ -173,7 +175,6 @@ void PixTestXPixelAlive2::doTest() {
 	h_alive = bookTH2D("XPixelAlive", "XPixelAlive", 52,0,52,80,0,80);
 	TH2D *h_noisemap;
 	h_noisemap = bookTH2D("background hits", "background hits", 52,0,52,80,0,80);
-
 
 
   fApi->flushTestboard();

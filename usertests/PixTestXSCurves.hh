@@ -20,7 +20,7 @@ public:
   
 private:
 
-  int fParVcal, fParNtrig; 
+  int fParNtrig; 
   int fParNSteps;
 
 
