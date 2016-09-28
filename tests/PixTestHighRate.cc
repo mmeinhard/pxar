@@ -484,25 +484,33 @@ void PixTestHighRate::doXPixelAlive() {
     }
   }
   maskPixels();
-
+  
   // -- pattern generator setup without resets
   resetROC();
+  
   fPg_setup.clear();
   vector<pair<string, uint8_t> > pgtmp = fPixSetup->getConfigParameters()->getTbPgSettings();
-  //fPg_setup.push_back(std::make_pair("resetroc", 30));
   for (unsigned i = 0; i < pgtmp.size(); ++i) {
-    //if (string::npos != pgtmp[i].first.find("resetroc")) continue;
+    if (string::npos != pgtmp[i].first.find("resetroc")) continue;
     if (string::npos != pgtmp[i].first.find("resettbm")) continue;
     fPg_setup.push_back(pgtmp[i]);
   }
+  
+  /*
+  fPg_setup.clear();
+ //fPg_setup.push_back(make_pair("resetroc",10));
+  fPg_setup.push_back(make_pair("calibrate",106)); // PG_CAL  b000100
+  fPg_setup.push_back(make_pair("trigger",50));    // PG_TRG  b000010
+  fPg_setup.push_back(make_pair("token",0));     // PG_TOK  b000001
+  */
   if (0) for (unsigned int i = 0; i < fPg_setup.size(); ++i) cout << fPg_setup[i].first << ": " << (int)fPg_setup[i].second << endl;
 
   fApi->setPatternGenerator(fPg_setup);
 
   fApi->flushTestboard();
-  fApi->flushTestboard();
-  fApi->flushTestboard();
-  fApi->flushTestboard();
+  //fApi->flushTestboard();
+  //fApi->flushTestboard();
+  //fApi->flushTestboard();
 
 
   TStopwatch sw;

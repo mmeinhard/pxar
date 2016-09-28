@@ -261,7 +261,7 @@ void PixTestNoiseThreshold::scurves() {
   fApi->_dut->testAllPixels(false);
   fApi->_dut->maskAllPixels(false);
   maskPixels();
-  fApi->_dut->testPixel(0,79, true);
+  fApi->_dut->testPixel(11,20, true);
   /*fApi->_dut->testPixel(30,45, true);
   fApi->_dut->testPixel(46,76, true);
   fApi->_dut->testPixel(5,5, true);

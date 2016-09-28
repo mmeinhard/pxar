@@ -28,7 +28,7 @@ ntrig               10
 
 
 // ----------------------------------------------------------------------
-PixTestXSCurves::PixTestXSCurves(PixSetup *a, std::string name) : PixTest(a, name), fParNtrig(1),fParNSteps(20) {
+PixTestXSCurves::PixTestXSCurves(PixSetup *a, std::string name) : PixTest(a, name), fParNtrig(1),fParNSteps(20), fParMask(-1), fParEnable(-1) {
   PixTest::init();
   init(); 
 
@@ -58,6 +58,18 @@ bool PixTestXSCurves::setParameter(string parName, string sval) {
       }
       if (!parName.compare("nsteps")) {
 	fParNSteps = atoi(sval.c_str()); 
+      }
+      if (!parName.compare("maskborder")) {
+        PixUtil::replaceAll(sval, "checkbox(", ""); 
+        PixUtil::replaceAll(sval, ")", ""); 
+        fParMask = atoi(sval.c_str()); 
+        setToolTips();
+      }
+      if (!parName.compare("enableallpixels")) {
+        PixUtil::replaceAll(sval, "checkbox(", ""); 
+        PixUtil::replaceAll(sval, ")", ""); 
+        fParEnable = atoi(sval.c_str()); 
+        setToolTips();
       }
       if (!parName.compare("pix")) {
         s1 = sval.find(","); 
@@ -142,7 +154,7 @@ void PixTestXSCurves::doTest() {
 
   fApi->flushTestboard();
   fPg_setup.clear();
-  a.push_back(make_pair("resetroc",25));    // PG_RESR b001000 
+  a.push_back(make_pair("resetroc",100));    // PG_RESR b001000 
   a.push_back(make_pair("calibrate",wbc+delay)); // PG_CAL  b000100
   a.push_back(make_pair("trigger",16));    // PG_TRG  b000010
   a.push_back(make_pair("token",0));     // PG_TOK  b000001
@@ -151,11 +163,30 @@ void PixTestXSCurves::doTest() {
   }
 
   fApi->setPatternGenerator(fPg_setup);
- 
+  if (fParEnable == 1) {
   fApi->_dut->maskAllPixels(false);
+  LOG(logINFO) << "Unmasking all pixels!";
+}
+  else if (fParEnable == 0) {
+  maskPixels();
+  LOG(logINFO) << "Masking all pixels!";
+}
+
+if (fParMask == 1) {
+    for (int i=0;i<52;i++) {
+      fApi->_dut->maskPixel(i,0,true);
+      fApi->_dut->maskPixel(i,79,true);
+    }
+    for (int i=0;i<80;i++) {
+      fApi->_dut->maskPixel(0,i,true);
+      fApi->_dut->maskPixel(51,i,true);
+    }
+  }
+
   fApi->_dut->testAllPixels(false);
 
   fApi->_dut->testPixel(fPIX[0].first,fPIX[0].second,true);
+  fApi->_dut->maskPixel(fPIX[0].first,fPIX[0].second,false);
 
   fApi->daqStart();
 
@@ -250,7 +281,7 @@ void PixTestXSCurves::doTest() {
   
 
   TF1 *scurveFit = new TF1("Fit","[0]*TMath::Erf([2] * (x-[1])) + [3]",0,.3);
-  scurveFit->SetParameters(fParNtrig/2.,0.14,1/0.02,fParNtrig/2.);
+  scurveFit->SetParameters(fParNtrig/2.,h_countsvolts->GetMean(),1/0.02,fParNtrig/2.);
   h_countsvolts->Fit(scurveFit,"Q", "", 0.0, 0.3);
   //LOG(logINFO) << "Par0: " << scurveFit->GetParameter(0);
 

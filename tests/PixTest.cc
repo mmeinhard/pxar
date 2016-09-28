@@ -1717,6 +1717,7 @@ void PixTest::scurveAna(string dac, string name, vector<shist256*> maps, vector<
         int ibin = h1->FindBin(fThreshold);
         int bmin = ibin - 15;
         line = Form("%2d %3d", NSAMPLES, bmin);
+        //for (int ix = bmin; ix < bmin + NSAMPLES; ++ix) {
         for (int ix = 0; ix < 200; ++ix) {
           line += string(Form(" %3d", static_cast<int>(h1->GetBinContent(ix+1))));
         }

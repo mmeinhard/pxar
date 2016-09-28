@@ -20,7 +20,7 @@ public:
   
 private:
 
-  int fParNtrig; 
+  int fParNtrig, fParMask, fParEnable; 
   int fParNSteps;
 
 

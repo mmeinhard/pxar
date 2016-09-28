@@ -270,7 +270,7 @@ void PixTestScurves2::scurves() {
   fApi->_dut->testAllPixels(false);
   fApi->_dut->maskAllPixels(false);
   maskPixels();
-  fApi->_dut->testPixel(0,79, true);
+  fApi->_dut->testPixel(11,20, true);
 
   int results(0xf); 
   if (fDumpAll) results |= 0x20;

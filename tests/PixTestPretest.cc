@@ -454,6 +454,7 @@ void PixTestPretest::setVana() {
     }
   }
   // -- summary printout
+  LOG(logINFO) << "Found Vana = " << setw(3) << int(vanaStart[0]);
   LOG(logINFO) << "PixTestPretest::setVana() done, Module Ia " << ia16 << " mA = " << ia16/nRocs << " mA/ROC";
   LOG(logINFO) << "i(loss) [mA/ROC]:   " << vanaString;
 

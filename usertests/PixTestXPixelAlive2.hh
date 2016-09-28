@@ -23,6 +23,7 @@ private:
 
   int fParVcal, fParNtrig, fParReset, fParMask;
   int fParNSteps;
+  bool fParDelayTBM;
 
   bool          fPhCalOK;
   PHCalibration fPhCal;

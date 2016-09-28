@@ -28,7 +28,7 @@ ntrig               10
 
 
 // ----------------------------------------------------------------------
-PixTestXPixelAlive2::PixTestXPixelAlive2(PixSetup *a, std::string name) : PixTest(a, name), fParVcal(35), fParNtrig(1), fParReset(-1),fParMask(-1) {
+PixTestXPixelAlive2::PixTestXPixelAlive2(PixSetup *a, std::string name) : PixTest(a, name), fParVcal(35), fParNtrig(1), fParReset(-1),fParMask(-1),fParDelayTBM(false) {
 	PixTest::init();
 	init(); 
 
@@ -63,6 +63,12 @@ bool PixTestXPixelAlive2::setParameter(string parName, string sval) {
 				fParMask = atoi(sval.c_str()); 
 				setToolTips();
 			}
+			if (!parName.compare("delaytbm")) {
+				PixUtil::replaceAll(sval, "checkbox(", "");
+				PixUtil::replaceAll(sval, ")", "");
+				fParDelayTBM = !(atoi(sval.c_str())==0);
+				setToolTips();
+      			}
 			if (!parName.compare("ntrig")) {
 	fParNtrig = atoi(sval.c_str()); 
 			}
@@ -98,12 +104,10 @@ void PixTestXPixelAlive2::setToolTips() {
 	fSummaryTip = string("summary plot to be implemented")
 		;
 }
-
 // ----------------------------------------------------------------------
 void PixTestXPixelAlive2::bookHist(string name) {
-	fDirectory->cd(); 
+  fDirectory->cd();
 
-	LOG(logDEBUG) << "nothing done with " << name;
 }
 
 
@@ -116,7 +120,12 @@ PixTestXPixelAlive2::~PixTestXPixelAlive2() {
 // ----------------------------------------------------------------------
 void PixTestXPixelAlive2::doTest() {
 
+	ConfigParameters* config = fPixSetup->getConfigParameters();
+
 	TStopwatch t;
+
+	vector<uint8_t> rocIds = fApi->_dut->getEnabledRocIDs();
+        unsigned nrocs = rocIds.size();
 
 	fDirectory->cd();
 	PixTest::update(); 
@@ -129,9 +138,38 @@ void PixTestXPixelAlive2::doTest() {
 	fDirectory->cd();
 	PixTest::update(); 
 
+	  // -- cache triggerdelay
+  vector<pair<string, uint8_t> > oldDelays = fPixSetup->getConfigParameters()->getTbSigDelays();
+  bool foundIt(false);
+  for (unsigned int i = 0; i < oldDelays.size(); ++i) {
+    if (oldDelays[i].first == "triggerdelay") {
+      foundIt = true;
+    }
+    LOG(logDEBUG) << " old set: " << oldDelays[i].first << ": " << (int)oldDelays[i].second;
+  }
+
+  vector<pair<string, uint8_t> > delays = fPixSetup->getConfigParameters()->getTbSigDelays();
+  if (!foundIt) {
+    delays.push_back(make_pair("triggerdelay", 20));
+    oldDelays.push_back(make_pair("triggerdelay", 0));
+  } else {
+    for (unsigned int i = 0; i < delays.size(); ++i) {
+      if (delays[i].first == "triggerdelay") {
+	delays[i].second = 20;
+      }
+    }
+  }
+
+  //fApi->setTbmReg("delays",0x40);
+
+  for (unsigned int i = 0; i < delays.size(); ++i) {
+    LOG(logDEBUG) << " setting: " << delays[i].first << ": " << (int)delays[i].second;
+  }
+  fApi->setTestboardDelays(delays);
+
 	vector<pair<string, uint8_t> > a;
 	
-	uint8_t wbc = 100;
+	/*uint8_t wbc = 100;
 	uint8_t delay = 5;
 	fApi->setDAC("Vcal", fParVcal);
 	fPg_setup.clear();
@@ -139,17 +177,35 @@ void PixTestXPixelAlive2::doTest() {
 		a.push_back(make_pair("resetroc",50));    // PG_RESR b001000 
 	}
 	a.push_back(make_pair("calibrate",wbc+delay)); // PG_CAL  b000100
+	LOG(logINFO) << config->getNtbms() ;
+	if (config->getNtbms() < 1) {
 	a.push_back(make_pair("trigger",16));    // PG_TRG  b000010
 	a.push_back(make_pair("token",0));     // PG_TOK  b000001
+	}
+	else {
+	a.push_back(std::make_pair("trigger;sync",0));     // PG_TRG PG_SYNC
+	}
 	for (unsigned i = 0; i < a.size(); ++i) {
 		fPg_setup.push_back(a[i]);
 	}
 
 
 
-	fApi->setPatternGenerator(fPg_setup);
- 
+	fApi->setPatternGenerator(fPg_setup);*/
+if (fParReset == 0) {
+  fPg_setup.clear();
+  vector<pair<string, uint8_t> > pgtmp = fPixSetup->getConfigParameters()->getTbPgSettings();
+  for (unsigned i = 0; i < pgtmp.size(); ++i) {
+    if (string::npos != pgtmp[i].first.find("resetroc")) continue;
+    if (string::npos != pgtmp[i].first.find("resettbm")) continue;
+    fPg_setup.push_back(pgtmp[i]);
+  }
+  if (0) for (unsigned int i = 0; i < fPg_setup.size(); ++i) cout << fPg_setup[i].first << ": " << (int)fPg_setup[i].second << endl;
+
+  fApi->setPatternGenerator(fPg_setup);
+}
 	fApi->_dut->maskAllPixels(false);
+
 	fApi->_dut->testAllPixels(false);
 	if (fParMask == 1) {
 		for (int i=0;i<52;i++) {
@@ -161,25 +217,20 @@ void PixTestXPixelAlive2::doTest() {
 			fApi->_dut->maskPixel(51,i,true);
 		}
 	}
-	TH1D *h;
-	h = bookTH1D("PH distribution", "PH distribution", 256, 0, 256.0);
-	TH1D *h_noise;
-	h_noise = bookTH1D("PH distribution (noise)", "PH distribution (noise)", 256, 0, 256.0);
-	TH1D *h_charge;
-	h_charge = bookTH1D("PH distribution (charge)", "PH distribution (charge)", 200, 0, 400.0);
-	TH1D *h_time;
-	h_time = bookTH1D("nhits", "nhits", fParNtrig, 0, fParNtrig);
-	TH1D *h_timecal;
-	h_timecal = bookTH1D("nhits cal", "nhits cal", fParNtrig, 0, fParNtrig);
-	TH2D *h_alive;
-	h_alive = bookTH2D("XPixelAlive", "XPixelAlive", 52,0,52,80,0,80);
-	TH2D *h_noisemap;
-	h_noisemap = bookTH2D("background hits", "background hits", 52,0,52,80,0,80);
+	
+	
+	vector <TH2D*> h_alive;
+	vector <TH2D*> h_hitmap;
 
+	for (int i=0; i<nrocs; i++) {
+	h_alive.push_back(bookTH2D(Form("highRate_C%d", getIdFromIdx(i)), Form("highRate_C%d", getIdFromIdx(i)), 52,0,52,80,0,80));
+	h_hitmap.push_back(bookTH2D(Form("highRate_xraymap_C%d", getIdFromIdx(i)), Form("highRate_xraymap_C%d", getIdFromIdx(i)), 52,0,52,80,0,80));
 
-  fApi->flushTestboard();
+}
 
-	//fApi->daqSingleSignal("resetroc");
+	//fApi->flushTestboard();
+
+	fApi->daqSingleSignal("resetroc");
 	fApi->daqStart();
 
 	for (int co = 0; co<52; co++) {
@@ -188,7 +239,7 @@ void PixTestXPixelAlive2::doTest() {
 			fApi->_dut->testPixel(co,ro,true);
 			fApi->SetCalibrateBits(true);
 
-			fApi->daqTrigger(fParNtrig, 10000);
+			fApi->daqTrigger(fParNtrig, 1000);
 
 			fApi->_dut->testPixel(co,ro,false);
 			fApi->SetCalibrateBits(false);
@@ -212,7 +263,6 @@ void PixTestXPixelAlive2::doTest() {
 		int co = (EventId/fParNtrig)/80;
 	std::stringstream ss("");
 	ss << "Event " << EventId << ": ";
-		bool pixelSeen = false;
 		for (unsigned int i=0;i<it->pixels.size();i++) {
 			/*
 			if (it->pixels[i].row() != 20 || it->pixels[i].column() != 11) {
@@ -222,81 +272,61 @@ void PixTestXPixelAlive2::doTest() {
 			if (it->pixels[i].row() != 20 || it->pixels[i].column() != 11) {
 				ss << "]";
 			}*/
-
+			int rocid = it->pixels[i].roc();
+			int rocidx = getIdxFromId(rocid);
 			if (it->pixels[i].row() == ro && it->pixels[i].column() == co) {
-				h->Fill(it->pixels[i].value());
-				h_alive->Fill(co,ro,1);
-				h_timecal->Fill(EventId%fParNtrig);
-				double q;
-				if (fPhCalOK) {
-					q = fPhCal.vcal(it->pixels[i].roc(), 
-							it->pixels[i].column(), 
-							it->pixels[i].row(), 
-							it->pixels[i].value());
-
-					h_charge->Fill(q);
-				}
-				pixelSeen = true;
+				h_alive[rocidx]->Fill(co,ro,1);
 				
 			} else {
-				h_noise->Fill(it->pixels[i].value());
-				h_noisemap->Fill(it->pixels[i].column(), it->pixels[i].row(), 1);
+				h_hitmap[rocidx]->Fill(it->pixels[i].column(), it->pixels[i].row(), 1);
 			}
-			h_time->Fill(EventId%fParNtrig);
-			//ss << " ";
 		}
 
-		if (!pixelSeen) {
-				h->Fill(0);
-		}
-	//LOG(logINFO) << ss.str();
 	EventId++;
 	}
 
-	vector<int> deadPixel(1, 0);
-    vector<int> probPixel(1, 0);
-    vector<int> xHits(1,0);
-    vector<int> fidHits(1,0);
-    vector<int> allHits(1,0);
-    vector<int> fidPixels(1,0);
-	
-	for (int ix = 0; ix < h_alive->GetNbinsX(); ++ix) {
-    for (int iy = 0; iy < h_alive->GetNbinsY(); ++iy) {
-      allHits[0] += static_cast<int>(h_alive->GetBinContent(ix+1, iy+1));
-  		if ((ix > 0) && (ix < 51) && (iy < 79) && (h_alive->GetBinContent(ix+1, iy+1) > 0)) {
-    		fidHits[0] += static_cast<int>(h_alive->GetBinContent(ix+1, iy+1));
-    		++fidPixels[0];
+    vector<int> deadPixel(nrocs, 0);
+    vector<int> probPixel(nrocs, 0);
+    vector<int> xHits(nrocs,0);
+    vector<int> fidHits(nrocs,0);
+    vector<int> allHits(nrocs,0);
+    vector<int> fidPixels(nrocs,0);
+	for (int r=0; r<nrocs; r++) {
+	for (int ix = 0; ix < h_alive[r]->GetNbinsX(); ++ix) {
+    for (int iy = 0; iy < h_alive[r]->GetNbinsY(); ++iy) {
+      allHits[r] += static_cast<int>(h_alive[r]->GetBinContent(ix+1, iy+1));
+  		if ((ix > 0) && (ix < 51) && (iy < 79) && (h_alive[r]->GetBinContent(ix+1, iy+1) > 0)) {
+    		fidHits[r] += static_cast<int>(h_alive[r]->GetBinContent(ix+1, iy+1));
+    		++fidPixels[r];
   		}
   		// -- count dead pixels
- 		  if (h_alive->GetBinContent(ix+1, iy+1) < fParNtrig) {
-    		++probPixel[0];
-    		if (h_alive->GetBinContent(ix+1, iy+1) < 1) {
-      		++deadPixel[0];
+ 		  if (h_alive[r]->GetBinContent(ix+1, iy+1) < fParNtrig) {
+    		++probPixel[r];
+    		if (h_alive[r]->GetBinContent(ix+1, iy+1) < 1) {
+      		++deadPixel[r];
     		}
   		}
   		// -- Count X-ray hits detected
-  		if (h_noisemap->GetBinContent(ix+1,iy+1)>0){
-    		xHits[0] += static_cast<int> (h_noisemap->GetBinContent(ix+1,iy+1));
+  		if (h_hitmap[r]->GetBinContent(ix+1,iy+1)>0){
+    		xHits[r] += static_cast<int> (h_hitmap[r]->GetBinContent(ix+1,iy+1));
   		}
     }
   }
+}
 
 
 
 
 	
 
-	fHistList.push_back(h_noise);
-	fHistList.push_back(h_charge);
-	fHistList.push_back(h_time);
-	fHistList.push_back(h_timecal);
-	fHistList.push_back(h);
-	fHistList.push_back(h_noisemap);
-	fHistList.push_back(h_alive);
-	fHistOptions.insert(make_pair(h_noisemap, "colz"));
-	fHistOptions.insert(make_pair(h_alive, "colz"));
-	h_alive->Draw("COLZ");
-	fDisplayedHist = find(fHistList.begin(), fHistList.end(), h);
+	for (int r=0; r<nrocs; r++) {
+	fHistList.push_back(h_hitmap[r]);
+	fHistList.push_back(h_alive[r]);
+	fHistOptions.insert(make_pair(h_hitmap[r], "colz"));
+	fHistOptions.insert(make_pair(h_alive[r], "colz"));
+	h_alive[r]->Draw("COLZ");
+	}
+	fDisplayedHist = find(fHistList.begin(), fHistList.end(), h_alive[nrocs-1]);
 	
 
 	if (fProblem) {
@@ -305,11 +335,15 @@ void PixTestXPixelAlive2::doTest() {
 	}
 
 	double sensorArea = 0.015 * 0.010 * 54 * 81; // in cm^2, accounting for larger edge pixels (J. Hoss 2014/10/21)
+	if (fParMask == 1) {
+		sensorArea = 0.015 * 0.010 * 50 * 78;
+	}
 	string deadPixelString, probPixelString, xHitsString, numTrigsString,
 	fidCalHitsString, allCalHitsString,
 	fidCalEfficiencyString, allCalEfficiencyString,
 	xRayRateString;
 	for (unsigned int i = 0; i < probPixel.size(); ++i) {
+		float fidefficiency = fidHits[i]/static_cast<double>(fidPixels[i]*fParNtrig);
 		probPixelString += Form(" %4d", probPixel[i]);
 		deadPixelString += Form(" %4d", deadPixel[i]);
 		xHitsString     += Form(" %4d", xHits[i]);
@@ -319,7 +353,7 @@ void PixTestXPixelAlive2::doTest() {
 		numTrigsString += Form(" %4d", numTrigs );
 		fidCalEfficiencyString += Form(" %.1f", fidHits[i]/static_cast<double>(fidPixels[i]*fParNtrig)*100);
 		allCalEfficiencyString += Form(" %.1f", allHits[i]/static_cast<double>(numTrigs)*100);
-		xRayRateString += Form(" %.1f", xHits[i]/static_cast<double>(numTrigs)/25./sensorArea*1000.);
+		xRayRateString += Form(" %.1f", xHits[i]/static_cast<double>(numTrigs)/25./sensorArea*1000./fidefficiency);
 	}
 
 	int seconds = t.RealTime(); 
